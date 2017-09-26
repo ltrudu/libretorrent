@@ -71,6 +71,7 @@ import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.frostwire.jlibtorrent.Priority;
 import com.github.clans.fab.FloatingActionButton;
 import com.github.clans.fab.FloatingActionMenu;
 
@@ -78,12 +79,16 @@ import org.proninyaroslav.libretorrent.*;
 import org.proninyaroslav.libretorrent.adapters.ToolbarSpinnerAdapter;
 import org.proninyaroslav.libretorrent.adapters.TorrentListAdapter;
 import org.proninyaroslav.libretorrent.core.Torrent;
+import org.proninyaroslav.libretorrent.core.TorrentMetaInfo;
 import org.proninyaroslav.libretorrent.core.TorrentServiceCallback;
 import org.proninyaroslav.libretorrent.core.TorrentStateCode;
+import org.proninyaroslav.libretorrent.core.exceptions.DecodeException;
 import org.proninyaroslav.libretorrent.core.sorting.TorrentSorting;
 import org.proninyaroslav.libretorrent.core.sorting.TorrentSortingComparator;
 import org.proninyaroslav.libretorrent.core.stateparcel.TorrentStateParcel;
 import org.proninyaroslav.libretorrent.core.exceptions.FileAlreadyExistsException;
+import org.proninyaroslav.libretorrent.core.utils.FileIOUtils;
+import org.proninyaroslav.libretorrent.core.utils.TorrentUtils;
 import org.proninyaroslav.libretorrent.core.utils.Utils;
 import org.proninyaroslav.libretorrent.customviews.EmptyRecyclerView;
 import org.proninyaroslav.libretorrent.customviews.RecyclerViewDividerDecoration;
@@ -101,6 +106,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -133,6 +139,10 @@ public class MainFragment extends Fragment
 
     private static final int ADD_TORRENT_REQUEST = 1;
     private static final int TORRENT_FILE_CHOOSE_REQUEST = 2;
+
+    private static final String ACTION_LOADTORRENT = "org.proninyaroslav.libretorrent.loadtorrent";
+    private static final String EXTRA_TORRENT_FILEPATH = "TorrentFilePath";
+    private static final String EXTRA_TORRENT_DOWNLOADFOLDER = "DownloadFolder";
 
     private AppCompatActivity activity;
     private Toolbar toolbar;
@@ -307,8 +317,22 @@ public class MainFragment extends Fragment
         torrentsList.setAdapter(adapter);
 
         Intent i = activity.getIntent();
+
         /* If add torrent dialog has been called by an implicit intent */
-        if (i != null && i.hasExtra(AddTorrentActivity.TAG_RESULT_TORRENT)) {
+        if(i!= null && i.getAction() != null && i.getAction().equalsIgnoreCase(ACTION_LOADTORRENT) && i.hasExtra(EXTRA_TORRENT_FILEPATH))
+        {
+            String torrentFilePath = i.getStringExtra(EXTRA_TORRENT_FILEPATH);
+            String torrentDestination = (i.hasExtra(EXTRA_TORRENT_DOWNLOADFOLDER) ? i.getStringExtra(EXTRA_TORRENT_DOWNLOADFOLDER) : "");
+            Torrent torrent = buildTorrent(torrentFilePath, torrentDestination);
+
+            if (torrent != null) {
+                if (!bound || service == null) {
+                    addTorrentsQueue.add(torrent);
+                } else {
+                    service.addTorrent(torrent);
+                }
+            }
+        }else if (i != null && i.hasExtra(AddTorrentActivity.TAG_RESULT_TORRENT)) {
             if (prevImplIntent == null || !prevImplIntent.equals(i)) {
                 prevImplIntent = i;
                 Torrent torrent = i.getParcelableExtra(AddTorrentActivity.TAG_RESULT_TORRENT);
@@ -360,6 +384,46 @@ public class MainFragment extends Fragment
                 actionMode.setTitle(String.valueOf(adapter.getSelectedItemCount()));
             }
         }
+    }
+
+    private Torrent buildTorrent(String filePath, String torrentDestinationFolder){
+
+        File torrentFile = new File(filePath);
+        if(torrentFile.exists() == false)
+        {
+            return null;
+        }
+
+        String downloadDir = torrentDestinationFolder.length() > 0 ? torrentDestinationFolder : TorrentUtils.getTorrentDownloadPath(activity.getApplicationContext());
+
+        File downloadDirFile = new File(downloadDir);
+        if(downloadDirFile.exists() == false)
+            downloadDirFile.mkdirs();
+
+        TorrentMetaInfo info = null;
+        try {
+            info = new TorrentMetaInfo(filePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        } catch (DecodeException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+
+        ArrayList<Integer> priorities =
+                new ArrayList<>(Collections.nCopies(info.fileList.size(), Priority.NORMAL.swig()));
+
+        Torrent torrent = new Torrent(info.sha1Hash,
+                info.torrentName, priorities,
+                downloadDir, System.currentTimeMillis());
+        torrent.setSequentialDownload(true);
+        torrent.setPaused(false);
+        torrent.setTorrentFilePath(filePath);
+        torrent.setDownloadingMetadata(false);
+
+        return torrent;
     }
 
     @Override
