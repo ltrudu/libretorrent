@@ -964,6 +964,17 @@ public class TorrentTaskService extends Service
         }
     }
 
+    public synchronized void removeTorrent(String torrentId)
+    {
+        if (torrentTasks.containsKey(torrentId)) {
+            TorrentDownload task = torrentTasks.get(torrentId);
+            if (task != null) {
+                task.remove(false);
+            }
+            torrentTasks.remove(torrentId);
+        }
+    }
+
     private void saveTorrentFileIn(Torrent torrent, String saveDirPath)
     {
         String torrentFileName = torrent.getName() + ".torrent";
@@ -990,6 +1001,69 @@ public class TorrentTaskService extends Service
 
             pauseResumeTorrent(id);
         }
+    }
+
+    public synchronized  void pauseTorrent(String id){
+        if(id == null)
+        {
+            return;
+        }
+        TorrentDownload task = torrentTasks.get(id);
+        try {
+            if (task.isPaused() == false) {
+               task.pause();
+            }
+
+        } catch (Exception e) {
+            /* Ignore */
+        }
+    }
+
+    public synchronized  void resumeTorrent(String id){
+        if(id == null)
+        {
+            return;
+        }
+        TorrentDownload task = torrentTasks.get(id);
+        try {
+            if (task.isPaused() == true) {
+                task.resume(false);
+            }
+        } catch (Exception e) {
+            /* Ignore */
+        }
+    }
+
+    public synchronized  int getProgress(String id)
+    {
+        if(id == null)
+        {
+            return -1;
+        }
+        TorrentDownload task = torrentTasks.get(id);
+        try {
+            if(task != null)
+            return task.getProgress();
+        } catch (Exception e) {
+            /* Ignore */
+        }
+        return -1;
+    }
+
+    public synchronized  String getDownloadPath(String id)
+    {
+        if(id == null)
+        {
+            return null;
+        }
+        TorrentDownload task = torrentTasks.get(id);
+        try {
+            if(task != null)
+                return task.getTorrent().getDownloadPath();
+        } catch (Exception e) {
+            /* Ignore */
+        }
+        return null;
     }
 
     public synchronized void pauseResumeTorrent(String id)

@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 25
-    buildToolsVersion "25.0.2"
+    buildToolsVersion '27.0.3'
 
     defaultConfig {
         applicationId "org.proninyaroslav.libretorrent"
@@ -30,29 +30,29 @@ def ANDROID_SUPPORT_VERSION='25.3.1'
 def JLIBTORRENT_VERSION='1.2.0.10'
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    testImplementation 'junit:junit:4.12'
 
     /* Standard Android Support libs */
-    compile 'com.android.support:support-v4:' + ANDROID_SUPPORT_VERSION
-    compile 'com.android.support:appcompat-v7:' + ANDROID_SUPPORT_VERSION
-    compile 'com.android.support:design:' + ANDROID_SUPPORT_VERSION
-    compile 'com.android.support:cardview-v7:' + ANDROID_SUPPORT_VERSION
+    api 'com.android.support:support-v4:' + ANDROID_SUPPORT_VERSION
+    api 'com.android.support:appcompat-v7:' + ANDROID_SUPPORT_VERSION
+    api 'com.android.support:design:' + ANDROID_SUPPORT_VERSION
+    api 'com.android.support:cardview-v7:' + ANDROID_SUPPORT_VERSION
 
-    compile 'com.loopj.android:android-async-http:1.4.9'
-    compile 'commons-io:commons-io:2.5'
-    compile 'net.grandcentrix.tray:tray:0.12.0'
-    compile 'ch.acra:acra:4.9.2'
+    api 'com.loopj.android:android-async-http:1.4.9'
+    api 'commons-io:commons-io:2.5'
+    api 'net.grandcentrix.tray:tray:0.12.0'
+    api 'ch.acra:acra:4.9.2'
 
-    compile 'com.takisoft.fix:preference-v7:25.3.1.0'
-    compile 'com.github.aakira:expandable-layout:1.6.0@aar'
-    compile 'com.github.clans:fab:1.6.4'
-    compile 'com.github.yukuku:ambilwarna:2.0.1'
+    api 'com.takisoft.fix:preference-v7:25.3.1.0'
+    api 'com.github.aakira:expandable-layout:1.6.0@aar'
+    api 'com.github.clans:fab:1.6.4'
+    api 'com.github.yukuku:ambilwarna:2.0.1'
 
     /* libtorrent wrapper */
-    compile 'com.frostwire:jlibtorrent:' + JLIBTORRENT_VERSION
-    compile 'com.frostwire:jlibtorrent-android-arm:' + JLIBTORRENT_VERSION
-    compile 'com.frostwire:jlibtorrent-android-arm64:' + JLIBTORRENT_VERSION
-    compile 'com.frostwire:jlibtorrent-android-x86:' + JLIBTORRENT_VERSION
-    compile 'com.frostwire:jlibtorrent-android-x86_64:' + JLIBTORRENT_VERSION
+    api 'com.frostwire:jlibtorrent:' + JLIBTORRENT_VERSION
+    api 'com.frostwire:jlibtorrent-android-arm:' + JLIBTORRENT_VERSION
+    api 'com.frostwire:jlibtorrent-android-arm64:' + JLIBTORRENT_VERSION
+    api 'com.frostwire:jlibtorrent-android-x86:' + JLIBTORRENT_VERSION
+    api 'com.frostwire:jlibtorrent-android-x86_64:' + JLIBTORRENT_VERSION
 }

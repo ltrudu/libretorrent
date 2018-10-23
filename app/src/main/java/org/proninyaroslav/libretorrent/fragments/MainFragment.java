@@ -87,7 +87,6 @@ import org.proninyaroslav.libretorrent.core.sorting.TorrentSorting;
 import org.proninyaroslav.libretorrent.core.sorting.TorrentSortingComparator;
 import org.proninyaroslav.libretorrent.core.stateparcel.TorrentStateParcel;
 import org.proninyaroslav.libretorrent.core.exceptions.FileAlreadyExistsException;
-import org.proninyaroslav.libretorrent.core.utils.FileIOUtils;
 import org.proninyaroslav.libretorrent.core.utils.TorrentUtils;
 import org.proninyaroslav.libretorrent.core.utils.Utils;
 import org.proninyaroslav.libretorrent.customviews.EmptyRecyclerView;
@@ -103,7 +102,9 @@ import org.proninyaroslav.libretorrent.settings.SettingsManager;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -141,6 +142,11 @@ public class MainFragment extends Fragment
     private static final int TORRENT_FILE_CHOOSE_REQUEST = 2;
 
     private static final String ACTION_LOADTORRENT = "org.proninyaroslav.libretorrent.loadtorrent";
+    private static final String ACTION_REMOVETORRENT = "org.proninyaroslav.libretorrent.removetorrent";
+    private static final String ACTION_PAUSETORRENT = "org.proninyaroslav.libretorrent.pausetorrent";
+    private static final String ACTION_RESUMETORRENT = "org.proninyaroslav.libretorrent.resumetorrent";
+    private static final String ACTION_GETPROGRESS = "org.proninyaroslav.libretorrent.getprogress";
+
     private static final String EXTRA_TORRENT_FILEPATH = "TorrentFilePath";
     private static final String EXTRA_TORRENT_DOWNLOADFOLDER = "DownloadFolder";
 
@@ -332,7 +338,69 @@ public class MainFragment extends Fragment
                     service.addTorrent(torrent);
                 }
             }
-        }else if (i != null && i.hasExtra(AddTorrentActivity.TAG_RESULT_TORRENT)) {
+        }
+        else if(i!= null && i.getAction() != null && i.getAction().equalsIgnoreCase(ACTION_REMOVETORRENT) && i.hasExtra(EXTRA_TORRENT_FILEPATH)) {
+            String torrentFilePath = i.getStringExtra(EXTRA_TORRENT_FILEPATH);
+            String torrentId = getTorrentId(torrentFilePath);
+
+            if (torrentId != null) {
+                if (bound && service != null) {
+                    service.removeTorrent(torrentId);
+                }
+            }
+        }
+        else if(i!= null && i.getAction() != null && i.getAction().equalsIgnoreCase(ACTION_PAUSETORRENT) && i.hasExtra(EXTRA_TORRENT_FILEPATH)) {
+            String torrentFilePath = i.getStringExtra(EXTRA_TORRENT_FILEPATH);
+            String torrentId = getTorrentId(torrentFilePath);
+
+            if (torrentId != null) {
+                if (bound && service != null) {
+                    service.pauseTorrent(torrentId);
+                }
+            }
+        }
+        else if(i!= null && i.getAction() != null && i.getAction().equalsIgnoreCase(ACTION_RESUMETORRENT) && i.hasExtra(EXTRA_TORRENT_FILEPATH)) {
+            String torrentFilePath = i.getStringExtra(EXTRA_TORRENT_FILEPATH);
+            String torrentId = getTorrentId(torrentFilePath);
+
+            if (torrentId != null) {
+                if (bound && service != null) {
+                    service.resumeTorrent(torrentId);
+                }
+            }
+        }
+        else if(i!= null && i.getAction() != null && i.getAction().equalsIgnoreCase(ACTION_GETPROGRESS) && i.hasExtra(EXTRA_TORRENT_FILEPATH)) {
+            String torrentFilePath = i.getStringExtra(EXTRA_TORRENT_FILEPATH);
+            String torrentId = getTorrentId(torrentFilePath);
+            if (torrentId != null) {
+                if (bound && service != null) {
+                    int progress = service.getProgress(torrentId);
+                    String downloadPath = service.getDownloadPath(torrentId);
+                    File progressFile = new File(downloadPath,"progress.txt");
+                    if(progressFile.exists())
+                        progressFile.delete();
+                    FileOutputStream stream = null;
+                    try {
+                        stream = new FileOutputStream(progressFile);
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                        return;
+                    }
+                    try {
+                        stream.write(Integer.toString(progress).getBytes());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } finally {
+                        try {
+                            stream.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }
+        else if (i != null && i.hasExtra(AddTorrentActivity.TAG_RESULT_TORRENT)) {
             if (prevImplIntent == null || !prevImplIntent.equals(i)) {
                 prevImplIntent = i;
                 Torrent torrent = i.getParcelableExtra(AddTorrentActivity.TAG_RESULT_TORRENT);
@@ -384,6 +452,30 @@ public class MainFragment extends Fragment
                 actionMode.setTitle(String.valueOf(adapter.getSelectedItemCount()));
             }
         }
+    }
+
+    private String getTorrentId(String filePath)
+    {
+        File torrentFile = new File(filePath);
+        if(torrentFile.exists() == false)
+        {
+            return null;
+        }
+
+        TorrentMetaInfo info = null;
+        try {
+            info = new TorrentMetaInfo(filePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        } catch (DecodeException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        if(info != null)
+            return info.sha1Hash;
+        return null;
     }
 
     private Torrent buildTorrent(String filePath, String torrentDestinationFolder){
